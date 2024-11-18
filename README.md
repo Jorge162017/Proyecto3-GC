@@ -105,4 +105,5 @@ El siguiente es un ejemplo visual de lo que verás al ejecutar el programa:
 - Un sistema solar donde los planetas rotan constantemente.
 - La luz direccional estática ilumina el modelo.
 
+![Image](images/SistemaSolar.gif)
 
