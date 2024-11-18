@@ -27,7 +27,7 @@ pub struct Uniforms {
     viewport_matrix: Mat4,
     time: u32,
     noise: FastNoiseLite,
-    planet_type: u32, // 0: Sol, 1: Mercurio, 2: Venus, etc.
+    planet_type: u32, // 0 for Sun, 1 for Mercury, etc.
 }
 
 fn create_noise() -> FastNoiseLite {
@@ -141,7 +141,7 @@ fn main() {
 
     let mut framebuffer = Framebuffer::new(framebuffer_width, framebuffer_height);
     let mut window = Window::new(
-        "Animated Fragment Shader - Solar System",
+        "Simple Solar System",
         window_width,
         window_height,
         WindowOptions::default(),
@@ -154,76 +154,42 @@ fn main() {
     framebuffer.set_background_color(0x000000);
 
     let mut camera = Camera::new(
-        Vec3::new(0.0, 0.0, 20.0),
+        Vec3::new(0.0, 0.0, 30.0),
         Vec3::new(0.0, 0.0, 0.0),
-        Vec3::new(0.0, 1.0, 0.0)
+        Vec3::new(0.0, 1.0, 0.0),
     );
 
     let sphere_obj = Obj::load("assets/models/sphere.obj").expect("Failed to load sphere.obj");
-    let sphere_vertex_array = sphere_obj.get_vertex_array();
-    let mut time = 0;
+    let vertex_array = sphere_obj.get_vertex_array();
 
-    while window.is_open() {
-        if window.is_key_down(Key::Escape) {
-            break;
-        }
+    let mut time: f32 = 0.0;
 
-        time += 1;
+    while window.is_open() && !window.is_key_down(Key::Escape) {
+        time += 0.01;
+        framebuffer.clear();
 
         handle_input(&window, &mut camera);
 
-        framebuffer.clear();
-
-        // Renderizar el Sol
-        let sun_model_matrix = create_model_matrix(Vec3::new(0.0, 0.0, 0.0), 3.0, Vec3::new(0.0, 0.0, 0.0));
-        let view_matrix = create_view_matrix(camera.eye, camera.center, camera.up);
-        let projection_matrix = create_perspective_matrix(window_width as f32, window_height as f32);
-        let viewport_matrix = create_viewport_matrix(framebuffer_width as f32, framebuffer_height as f32);
-
-        let sun_uniforms = Uniforms {
-            model_matrix: sun_model_matrix,
-            view_matrix,
-            projection_matrix,
-            viewport_matrix,
-            time,
-            noise: create_noise(),
-            planet_type: 0, // Sol
-        };
-
-        render(&mut framebuffer, &sun_uniforms, &sphere_vertex_array);
-
-        // Renderizar Planetas
-        let planets = [
-            (1, 0.5, 5.0),   // Mercurio
-            (2, 0.8, 7.0),   // Venus
-            (3, 1.0, 10.0),  // Tierra
-            (4, 0.7, 13.0),  // Marte
-            (5, 2.0, 16.0),  // Júpiter
-            (6, 1.8, 19.0),  // Saturno
-            (7, 1.6, 22.0),  // Urano
-            (8, 1.4, 25.0),  // Neptuno
+        let planets = vec![
+            (Vec3::new(0.0, 0.0, 0.0), 2.5, 0, 0.0), // Sun
+            (Vec3::new(4.0 * time.cos(), 0.0, 4.0 * time.sin()), 0.5, 1, time), // Mercury
+            (Vec3::new(6.0 * time.cos(), 0.0, 6.0 * time.sin()), 0.8, 2, time * 0.8), // Venus
+            (Vec3::new(8.0 * time.cos(), 0.0, 8.0 * time.sin()), 1.0, 3, time * 0.6), // Earth
+            (Vec3::new(10.0 * time.cos(), 0.0, 10.0 * time.sin()), 0.6, 4, time * 0.5), // Mars
         ];
 
-        for (planet_type, scale, distance) in planets.iter() {
-            let planet_translation = Vec3::new(
-                *distance * (time as f32 * 0.01).cos(),
-                0.0,
-                *distance * (time as f32 * 0.01).sin(),
-            );
-
-            let planet_model_matrix = create_model_matrix(planet_translation, *scale, Vec3::new(0.0, 0.0, 0.0));
-
-            let planet_uniforms = Uniforms {
-                model_matrix: planet_model_matrix,
-                view_matrix,
-                projection_matrix,
-                viewport_matrix,
-                time,
+        for (translation, scale, planet_type, rotation) in planets {
+            let model_matrix = create_model_matrix(translation, scale, Vec3::new(0.0, rotation, 0.0));
+            let uniforms = Uniforms {
+                model_matrix,
+                view_matrix: create_view_matrix(camera.eye, camera.center, camera.up),
+                projection_matrix: create_perspective_matrix(window_width as f32, window_height as f32),
+                viewport_matrix: create_viewport_matrix(framebuffer_width as f32, framebuffer_height as f32),
+                time: time as u32,
                 noise: create_noise(),
-                planet_type: *planet_type,
+                planet_type,
             };
-
-            render(&mut framebuffer, &planet_uniforms, &sphere_vertex_array);
+            render(&mut framebuffer, &uniforms, &vertex_array);
         }
 
         window

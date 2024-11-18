@@ -87,8 +87,17 @@ fn jupiter_shader(_fragment: &Fragment, _uniforms: &Uniforms) -> Color {
     Color::new(255, 165, 0) // Naranja
 }
 
-fn saturn_shader(_fragment: &Fragment, _uniforms: &Uniforms) -> Color {
-    Color::new(210, 180, 140) // Beige claro
+fn saturn_shader(fragment: &Fragment, uniforms: &Uniforms) -> Color {
+    let noise_value = uniforms.noise.get_noise_3d(
+        fragment.vertex_position.x * 5.0,
+        fragment.vertex_position.y * 5.0,
+        fragment.vertex_position.z * 5.0,
+    );
+    if noise_value > 0.0 {
+        Color::new(210, 180, 140) // Beige claro
+    } else {
+        Color::new(189, 183, 107) // Amarillo grisáceo
+    }
 }
 
 fn uranus_shader(_fragment: &Fragment, _uniforms: &Uniforms) -> Color {
